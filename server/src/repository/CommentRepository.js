@@ -1,75 +1,110 @@
 const CommentModel = require("../models/CommentModel");
 const PostRepository = require("./PostRepository");
 
-const CommentRepository ={};
+const CommentRepository = {};
 
-CommentRepository.save = async (payload)=>{
-    const comment = new CommentModel(payload);
-    return await comment.save();
-}
+CommentRepository.save = async (payload) => {
+  const comment = new CommentModel(payload);
+  return await comment.save();
+};
 
-CommentRepository.getAllComments = async ()=>{
-    return await CommentModel.find();
-}
+CommentRepository.getAllComments = async () => {
+  return await CommentModel.find();
+};
 
-CommentRepository.getCommentById =async (id)=>{
-    return await CommentModel.findById(id);
-}
+CommentRepository.getCommentById = async (id) => {
+  return await CommentModel.findById(id);
+};
 
-CommentRepository.updateComment = async (id,payload)=>{
-    return await CommentModel.findByIdAndUpdate(id,payload);
-}
+CommentRepository.updateComment = async (id, payload) => {
+  const comment = await CommentModel.findById(id);
 
-CommentRepository.commentPost = async (id,payload)=>{
-    const comment = new CommentModel(payload);
-    await comment.save();
-    await PostRepository.updateCommentPost(comment._id.toString(),id);
-}
+  comment.desc = payload.desc;
+  if (comment.type == "post") {
+    await PostRepository.updateComment(comment, comment.idParent);
+  }
 
-CommentRepository.delete= async (id)=>{
-    const commentParent = await CommentModel.findById(id);
+  if (comment.type == "comment") {
+    const commentP = await CommentModel.findById(comment.idParent);
+    var comments = [];
+    commentP?.comments.forEach((commentK) => {
+      if (commentK._id != comment._id.toString()) {
+        comments = [...comments, commentK];
+      } else {
+        comments = [...comments, comment];
+      }
+    });
+    commentP.comments = comments;
+    await commentP.save();
+  }
 
-    await commentParent.comments.forEach(async(comment)=>{
-            console.log(comment);
-        const commentChild = await CommentModel.findById(comment);
-            if( commentChild.comments.length>0 ){
-                console.log("test");
-                await CommentRepository.delete(comment);
-            }
-            await CommentModel.findByIdAndDelete(comment);
-        })
-    await CommentModel.findByIdAndDelete(id);
-}
+  return await comment.save();
+};
 
-CommentRepository.commentToComment = async (id,payload)=>{
-    const comment = new CommentModel(payload);
-    await comment.save();
-    const commentParent = await CommentModel.findById(id);
- if (!commentParent.comments.includes(comment._id.toString())){
-        await commentParent.updateOne({$push: {comments:comment._id.toString()}});
-        return {
-            message: "Comment success"
-        }
-    } 
-}
+CommentRepository.commentPost = async (id, payload) => {
+  const comment = new CommentModel({ ...payload, idParent: id, type: "post" });
+  await comment.save();
+  await PostRepository.updateCommentPost(comment, id);
+};
 
-CommentRepository.likeComment = async (id,userId)=>{
-    const comment = await CommentModel.findById(id);
+CommentRepository.delete = async (id) => {
+  const commentParent = await CommentModel.findById(id);
 
-    if (!comment.likes.includes(userId)){
-        await comment.updateOne({$push: {likes:userId}});
-        return {
-            like:comment.likes.length+1,
-            message: "Like success"
-        }
-    } 
-    else {
-        await comment.updateOne({$pull: {likes:userId}});
-        return {
-            like:comment.likes.length-1,
-            message: "Dislike success"
-        }
-    }
-}
+  if (commentParent.type == "post") {
+    await PostRepository.deleteCommentPost(
+      commentParent,
+      commentParent.idParent,
+    );
+  }
+
+  if (commentParent.type == "comment") {
+    const commentP = await CommentModel.findById(commentParent.idParent);
+    var comments = [];
+    commentP?.comments.forEach((comment) => {
+      if (comment._id != commentParent._id.toString()) {
+        comments = [...comments, comment];
+      }
+    });
+    commentP.comments = comments;
+    await commentP.save();
+  }
+  await CommentModel.findByIdAndDelete(id);
+};
+
+CommentRepository.commentToComment = async (id, payload) => {
+  const comment = new CommentModel({
+    ...payload,
+    idParent: id,
+    type: "comment",
+  });
+  await comment.save();
+  let commentParent = await CommentModel.findById(id);
+
+  await commentParent.updateOne({
+    $push: { comments: comment },
+  });
+
+  return {
+    message: "Comment success",
+  };
+};
+
+CommentRepository.likeComment = async (id, userId) => {
+  const comment = await CommentModel.findById(id);
+
+  if (!comment.likes.includes(userId)) {
+    await comment.updateOne({ $push: { likes: userId } });
+    return {
+      like: comment.likes.length + 1,
+      message: "Like success",
+    };
+  } else {
+    await comment.updateOne({ $pull: { likes: userId } });
+    return {
+      like: comment.likes.length - 1,
+      message: "Dislike success",
+    };
+  }
+};
 
 module.exports = CommentRepository;

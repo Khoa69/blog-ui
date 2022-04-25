@@ -5,7 +5,7 @@
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 
-const AuthController ={};
+const AuthController = {};
 
 // // AuthController.register= async(req,res)=>{
 // //     const { username, email, password } = req.body;
@@ -27,7 +27,7 @@ const AuthController ={};
 // //         email,
 // //         password: hashPassword
 // //     });
-    
+
 // //     res.status(200).json(newUser);
 // // };
 
@@ -74,15 +74,14 @@ const AuthController ={};
 // // 	});
 // // };
 
-
 const User = require("../models/UserModel");
-const Role =  require("../models/RoleModel");
+const Role = require("../models/RoleModel");
 
 AuthController.signup = (req, res) => {
   const user = new User({
     username: req.body.username,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8)
+    password: bcrypt.hashSync(req.body.password, 8),
   });
   user.save((err, user) => {
     if (err) {
@@ -92,22 +91,22 @@ AuthController.signup = (req, res) => {
     if (req.body.roles) {
       Role.find(
         {
-          name: { $in: req.body.roles }
+          name: { $in: req.body.roles },
         },
         (err, roles) => {
           if (err) {
             res.status(500).send({ message: err });
             return;
           }
-          user.roles = roles.map(role => role._id);
-          user.save(err => {
+          user.roles = roles.map((role) => role._id);
+          user.save((err) => {
             if (err) {
               res.status(500).send({ message: err });
               return;
             }
             res.send({ message: "User was registered successfully!" });
           });
-        }
+        },
       );
     } else {
       Role.findOne({ name: "user" }, (err, role) => {
@@ -116,7 +115,7 @@ AuthController.signup = (req, res) => {
           return;
         }
         user.roles = [role._id];
-        user.save(err => {
+        user.save((err) => {
           if (err) {
             res.status(500).send({ message: err });
             return;
@@ -127,9 +126,9 @@ AuthController.signup = (req, res) => {
     }
   });
 };
-AuthController.login =async (req, res) => {
+AuthController.login = async (req, res) => {
   User.findOne({
-    username: req.body.username
+    username: req.body.username,
   })
     .populate("roles", "-__v")
     .exec((err, user) => {
@@ -142,33 +141,33 @@ AuthController.login =async (req, res) => {
       }
       var passwordIsValid = bcrypt.compareSync(
         req.body.password,
-        user.password
+        user.password,
       );
       if (!passwordIsValid) {
         return res.status(401).send({
           accessToken: null,
-          message: "Invalid Password!"
+          message: "Invalid Password!",
         });
       }
-  	const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
-	const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
-
+      const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+      const accessTokenLife = process.env.ACCESS_TOKEN_LIFE;
 
       var token = jwt.sign({ id: user.id }, accessTokenSecret, {
-        expiresIn: accessTokenLife // 24 hours
+        expiresIn: accessTokenLife, // 24 hours
       });
       var authorities = [];
       for (let i = 0; i < user.roles.length; i++) {
         authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
       }
       res.status(200).send({
+        user: user,
         id: user._id,
         username: user.username,
         email: user.email,
         roles: authorities,
-        accessToken: token
+        accessToken: token,
       });
     });
 };
 
-module.exports =AuthController;
+module.exports = AuthController;

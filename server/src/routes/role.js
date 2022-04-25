@@ -7,7 +7,7 @@ router.get("/",[authJwt.verifyToken,authJwt.isManager], async (req, res) => {
     RoleController.getAllRole(req, res);
 })
 
-router.post("/", async (req, res) => {
+router.post("/",[authJwt.verifyToken,authJwt.isManager], async (req, res) => {
     RoleController.createRole(req, res);
 })
 

@@ -29,7 +29,11 @@ const UserSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Role"
       }
-    ]
+    ],
+    isDelete:{
+      type: Boolean,
+      default: false,
+    }
 });
 
 module.exports = mongoose.model("User", UserSchema);

@@ -1,0 +1,35 @@
+.category {
+    flex: 4;
+}
+
+.newCategoryForm {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    width: 80%;
+}
+
+.newCategoryForm > label {
+    font-weight: 600;
+    font-size: xx-large;
+    margin-right: 20px;
+}
+
+.newCategoryInput {
+    padding: 10px;
+    border-radius: 5px;
+    width: 500px;
+    margin-right: 20px;
+}
+
+.newCategoryButton {
+    background-color: #d9dd6b;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    height: 55px;
+    margin-left: 20px;
+}
+
+.categoryDelete {
+    cursor: pointer;
+}
